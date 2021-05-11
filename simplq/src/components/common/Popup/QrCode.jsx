@@ -1,10 +1,11 @@
 import React, { useRef, forwardRef } from 'react';
-import { makeStyles, Modal, useMediaQuery } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core';
 import { QRCode } from 'react-qrcode-logo';
 import PrintIcon from '@material-ui/icons/Print';
 import HighlightOffIcon from '@material-ui/icons/HighlightOff';
 import { useReactToPrint } from 'react-to-print';
 import { getSentenceCaseText } from 'utils/textOperations';
+import Modal from '../Modal';
 import StandardButton from '../Button';
 
 const ComponentToPrint = forwardRef(({ style, url, queueName }, ref) => {
@@ -13,7 +14,7 @@ const ComponentToPrint = forwardRef(({ style, url, queueName }, ref) => {
       <h1>
         <u>{getSentenceCaseText(queueName)}</u>
       </h1>
-      <h2>Scan this QR to begin!</h2>
+      <h2>Scan this QR to get your position in the line</h2>
       <QRCode value={url} />
       <p style={{ textAlign: 'center' }}>
         {'or visit '}
@@ -25,11 +26,7 @@ const ComponentToPrint = forwardRef(({ style, url, queueName }, ref) => {
   );
 });
 
-const QrCode = (props) => {
-  const { queueName, show, onClose } = props;
-
-  const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
-
+export const QrCode = ({ queueName, tourTag, handleModalClose }) => {
   const componentPrintRef = useRef();
 
   const handlePrint = useReactToPrint({
@@ -38,16 +35,6 @@ const QrCode = (props) => {
 
   const styles = makeStyles(() => {
     return {
-      modalContainer: {
-        position: 'absolute',
-        top: '20%',
-        backgroundColor: '#fff',
-        borderRadius: '25px',
-        outline: 'none',
-        width: isMobile ? '95%' : 400,
-        padding: 10,
-        margin: isMobile ? 10 : 0,
-      },
       centered: {
         display: 'flex',
         alignItems: 'center',
@@ -64,39 +51,46 @@ const QrCode = (props) => {
     };
   })();
 
-  const handleModalClose = () => onClose(false);
+  const CloseButton = ({ handleModalCloseHandler }) => {
+    if (handleModalCloseHandler) {
+      return (
+        <StandardButton onClick={handleModalCloseHandler} icon={<HighlightOffIcon />} outlined>
+          Close
+        </StandardButton>
+      );
+    }
+    return <></>;
+  };
 
   return (
-    <Modal
-      style={{
-        overflow: 'scroll',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      open={queueName ? show : !show}
-      onClose={handleModalClose}
-    >
-      <div className={styles['modalContainer']}>
-        <div className={styles['centered']}>
-          <ComponentToPrint
-            style={styles['centered']}
-            url={`${window.location.origin}/j/${queueName}`}
-            queueName={queueName}
-            ref={componentPrintRef}
-          />
-          <div className={styles['actionContainer']}>
-            <StandardButton onClick={handlePrint} icon={<PrintIcon />}>
-              Print
-            </StandardButton>
-            <StandardButton onClick={handleModalClose} icon={<HighlightOffIcon />} outlined>
-              Close
-            </StandardButton>
-          </div>
-        </div>
+    <div className={styles['centered']}>
+      <ComponentToPrint
+        style={styles['centered']}
+        url={`${window.location.origin}/j/${queueName}`}
+        queueName={queueName}
+        ref={componentPrintRef}
+      />
+      <div
+        reactour-selector={tourTag}
+        className={handleModalClose ? styles['actionContainer'] : null}
+      >
+        <StandardButton onClick={handlePrint} icon={<PrintIcon />}>
+          Print
+        </StandardButton>
+        <CloseButton handleModalCloseHandler={handleModalClose} />
       </div>
+    </div>
+  );
+};
+
+const QrCodeModal = (props) => {
+  const { queueName, show, onClose } = props;
+  const handleModalClose = () => onClose(false);
+  return (
+    <Modal open={queueName ? show : !show} onClose={handleModalClose}>
+      <QrCode queueName={queueName} handleModalClose={handleModalClose} />
     </Modal>
   );
 };
 
-export default QrCode;
+export default QrCodeModal;
